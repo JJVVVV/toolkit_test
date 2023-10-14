@@ -43,14 +43,20 @@ model_name="deepspeed_fp16_baseline"
 if [ "$task_type" = "classify" ]; then
   fp16=True
 else
-  fb16=True
+  fp16=False
 fi
+if [ "$task_type" = "generate" ]; then
+  fp16=False
+else
+  fp16=True
+fi
+
 test_in_epoch=False
 
 accumulate_step=1
 train_batch_size=100
 infer_batch_size=100
-epochs=7
+epochs=2
 max_length_input=None
 learning_rate='1e-4'
 warmup_num_step=-1
@@ -61,6 +67,7 @@ else
   metric='rougeL'
 fi
 
+save_dir="outputs"
 
 max_new_tokens=10
 do_sample=True
@@ -71,7 +78,8 @@ temperature=0.01
 
 train_file_path="data/$dataset_name/train/$part.jsonl"
 val_file_path="data/$dataset_name/validation/$part.jsonl"
-test_file_path="data/$dataset_name/test/$part.jsonl"
+# test_file_path="data/$dataset_name/test/$part.jsonl"
+test_file_path=None
 
 warmup_ratio=0.1
 # ###################################parameters#########################################
@@ -117,6 +125,8 @@ torchrun \
     --num_beams $num_beams \
     --top_k $top_k \
     --temperature $temperature \
-    --logging_steps 1
+    --logging_steps 1 \
+    --save_dir $save_dir
 
     # > $log_file 2>&1 &
+cd "$save_dir/optimal_checkpoint" && python zero_to_fp32.py . pytorch_model.bin

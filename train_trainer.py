@@ -196,7 +196,10 @@ if __name__ == "__main__":
         str(configs.opt_lr),
         str(configs.seed),
     )
-    configs.save_dir = Path("outputs", _dir)
+    if configs.save_dir is None:
+        configs.save_dir = Path("outputs", _dir)
+    else:
+        pass
     configs.save(configs.save_dir, silence=False)
 
     # * Create checkpoint manager
