@@ -3,10 +3,8 @@ import time
 from pathlib import Path
 
 import deepspeed
-import hjson
 import numpy as np
 import toolkit
-import torch
 import torch.distributed as dist
 import wandb
 from fire import Fire
@@ -20,7 +18,7 @@ from toolkit.training.initializer import initialize
 from torch.distributed.elastic.multiprocessing.errors import record
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.tensorboard import SummaryWriter
-from transformers import AutoConfig, AutoTokenizer, PreTrainedModel, PreTrainedTokenizer, PreTrainedTokenizerFast
+from transformers import AutoConfig, AutoTokenizer, PreTrainedModel, PreTrainedTokenizer, PreTrainedTokenizerFast, T5Config
 
 from load_data_fns import DATASET_CLASSNUM_MAP, LOAD_DATA_FNS, DatasetName, TextType
 from model.MatchModel_binary_classification import RobertaModel_binary_classify
@@ -126,22 +124,22 @@ def load_model() -> tuple[PreTrainedModel | DDP, PreTrainedTokenizer | PreTraine
     # * Load model, tokenizer to CPU memory
     logger.debug(f"local_rank {local_rank}: Loading model and tokenizer to CPU memory...")
     start = time.time()
-    # 加载自定义配置
-    my_config = None
-    try:
-        my_config = AutoConfig.from_pretrained(f"config/my_{configs.model_type}_config")
-        logger.debug(str(my_config))
-    except:
-        pass
 
     tokenizer = AutoTokenizer.from_pretrained(pretrainedModelDir)
-    model = MatchModel.from_pretrained(pretrainedModelDir)
+    if configs.test_load_to_gpu_directly:
+        model_config = AutoConfig.from_pretrained(pretrainedModelDir)
+        model_class = MatchModel
+        model = None
+    else:
+        model = MatchModel.from_pretrained(pretrainedModelDir)
+        model_config = model_class = None
+    configs.model_dir = pretrainedModelDir
     end = time.time()
 
     logger.debug(f"local_rank {local_rank}: Loading model and tokenizer from disk to CPU memory takes {end - start:.2f} sec.")
     if dist.is_initialized():
         dist.barrier()
-    return model, tokenizer
+    return model, model_config, model_class, tokenizer
 
 
 @record
@@ -151,7 +149,7 @@ def main() -> None:
     # # time.sleep(99999)
 
     # * Loading model
-    model, tokenizer = load_model()
+    model, model_config, model_class, tokenizer = load_model()
     if configs.dashboard == "wandb":
         wandb.watch(model.module if hasattr(model, "module") else model, log_freq=256)
 
@@ -164,6 +162,8 @@ def main() -> None:
         evaluate_only=False,
         config=configs,
         model=model,
+        model_config=model_config,
+        model_class=model_class,
         dataset_train=train_dataset,
         dataset_val=val_dataset,
         dataset_test=test_dataset,

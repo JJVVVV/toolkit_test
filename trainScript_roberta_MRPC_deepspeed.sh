@@ -126,7 +126,9 @@ torchrun \
     --top_k $top_k \
     --temperature $temperature \
     --logging_steps 1 \
-    --save_dir $save_dir
+    --save_dir $save_dir \
+    --save_latest_ckpt False \
+    --test_load_to_gpu_directly True \
 
     # > $log_file 2>&1 &
-cd "$save_dir/optimal_checkpoint" && python zero_to_fp32.py . pytorch_model.bin
+cd "$save_dir/optimal_checkpoint" && python zero_to_fp32.py . pytorch_model.bin && rm -rf optimal
