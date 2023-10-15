@@ -53,12 +53,12 @@ fi
 
 test_in_epoch=False
 
-accumulate_step=1
-train_batch_size=100
-infer_batch_size=100
-epochs=2
+accumulate_step=10
+train_batch_size=500
+infer_batch_size=500
+epochs=3
 max_length_input=None
-learning_rate='1e-4'
+learning_rate='3e-4'
 warmup_num_step=-1
 warmup_ratio_step=0.1
 if [ "$task_type" = "classify" ]; then
@@ -129,6 +129,8 @@ torchrun \
     --save_dir $save_dir \
     --save_latest_ckpt False \
     --test_load_to_gpu_directly True \
+    --padding_side right \
+    --ddp_timeout 3000
 
     # > $log_file 2>&1 &
 cd "$save_dir/optimal_checkpoint" && python zero_to_fp32.py . pytorch_model.bin && rm -rf optimal
