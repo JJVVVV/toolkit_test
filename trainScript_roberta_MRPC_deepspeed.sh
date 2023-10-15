@@ -51,7 +51,7 @@ fi
 
 test_in_epoch=False
 
-accumulate_step=10
+accumulate_step=2
 train_batch_size=500
 infer_batch_size=500
 epochs=3
@@ -125,7 +125,7 @@ torchrun \
     --temperature $temperature \
     --logging_steps 1 \
     --save_dir $save_dir \
-    --save_latest_ckpt False \
+    --save_last_ckpt False \
     --test_load_to_gpu_directly True \
     --padding_side right \
     --ddp_timeout 3000
