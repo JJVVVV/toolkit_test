@@ -42,13 +42,11 @@ model_name="deepspeed_fp16_baseline"
 # model_name="noise_only_$min_threshold"
 if [ "$task_type" = "classify" ]; then
   fp16=True
-else
-  fp16=False
+  bf16=False
 fi
 if [ "$task_type" = "generate" ]; then
   fp16=False
-else
-  fp16=True
+  bf16=True
 fi
 
 test_in_epoch=False
@@ -58,7 +56,7 @@ train_batch_size=500
 infer_batch_size=500
 epochs=3
 max_length_input=None
-learning_rate='3e-4'
+learning_rate='2e-4'
 warmup_num_step=-1
 warmup_ratio_step=0.1
 if [ "$task_type" = "classify" ]; then
@@ -118,7 +116,7 @@ torchrun \
     --model_dir $model_dir \
     --parallel_mode deepspeed \
     --fp16 $fp16 \
-    --fb16 $fb16 \
+    --bf16 $bf16 \
     --deepspeed_config ds_zero3_offload.hjson \
     --max_new_tokens $max_new_tokens \
     --do_sample $do_sample \
